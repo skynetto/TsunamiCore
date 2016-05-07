@@ -12,7 +12,7 @@ namespace Tsunami.Core
     public class AddTorrentParams : IDisposable
     {
         #region PInvoke
-        [DllImport("TsunamiBridge", CallingConvention =CallingConvention.StdCall)]
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
         public static extern IntPtr AddTorrentParams_Create();
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
@@ -49,11 +49,16 @@ namespace Tsunami.Core
         public static extern void AddTorrentParams_Url_Get(AddTorrentParamsHandle handle, StringBuilder str, int size);
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
-        public static extern void AddTorrentParams_Trackers_Get(AddTorrentParamsHandle handle, [In][Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] trk);
-        
+        public static extern uint AddTorrentParams_Trackers_Size_Get(AddTorrentParamsHandle handle);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern void AddTorrentParams_Trackers_Get(AddTorrentParamsHandle handle, [In][Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] trk, uint size);
+
         #endregion PInvoke
 
         AddTorrentParamsHandle handle;
+        private StringBuilder sb = new StringBuilder(256);
+
         private ATPFlags flags;
         public ATPFlags Flags
         {
@@ -65,17 +70,17 @@ namespace Tsunami.Core
             set
             {
                 flags = value;
-                AddTorrentParams_Flags_Set(handle,(uint)value);
+                AddTorrentParams_Flags_Set(handle, (uint)value);
             }
         }
-        
+
         public TorrentInfo ti
         {
             get
             {
                 ti.SetHandle(AddTorrentParams_TorrentInfo_Get(handle));
                 return ti;
-                
+
             }
             set
             {
@@ -88,9 +93,8 @@ namespace Tsunami.Core
         {
             get
             {
-                if(String.IsNullOrEmpty(name))
+                if (String.IsNullOrEmpty(name))
                 {
-                    StringBuilder sb = new StringBuilder(256);
                     AddTorrentParams_Name_Get(handle, sb, sb.Capacity);
                     name = sb.ToString();
                 }
@@ -99,7 +103,7 @@ namespace Tsunami.Core
             set
             {
                 name = value;
-                AddTorrentParams_Name_Set(handle,value);
+                AddTorrentParams_Name_Set(handle, value);
             }
         }
 
@@ -110,7 +114,6 @@ namespace Tsunami.Core
             {
                 if (String.IsNullOrEmpty(url))
                 {
-                    StringBuilder sb = new StringBuilder(256);
                     AddTorrentParams_Url_Get(handle, sb, sb.Capacity);
                     url = sb.ToString();
                 }
@@ -124,11 +127,20 @@ namespace Tsunami.Core
         }
 
         private string[] trackers;
-        public string [] Trackers
+        public string[] Trackers
         {
             get
             {
-                AddTorrentParams_Trackers_Get(handle, trackers);
+                if (trackers == null)
+                {
+                    uint size = AddTorrentParams_Trackers_Size_Get(handle);
+                    if (size != 0)
+                    {
+                        trackers = new string[size];
+                        AddTorrentParams_Trackers_Get(handle, trackers, size);
+                    }
+                }
+
                 return trackers;
             }
             set
@@ -144,7 +156,6 @@ namespace Tsunami.Core
             {
                 if (String.IsNullOrEmpty(save_path))
                 {
-                    StringBuilder sb = new StringBuilder(256);
                     AddTorrentParams_SavePath_Get(handle, sb, sb.Capacity);
                     save_path = sb.ToString();
                 }

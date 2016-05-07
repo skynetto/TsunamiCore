@@ -30,6 +30,7 @@ namespace Tsunami.Core
         #endregion PInvoke
 
         protected AlertHandle handle;
+        private StringBuilder sb = new StringBuilder(256);
 
         public Alert(IntPtr h)
         {
@@ -43,7 +44,6 @@ namespace Tsunami.Core
             {
                 if (String.IsNullOrEmpty(what))
                 {
-                    StringBuilder sb = new StringBuilder(256);
                     Alert_What_Get(handle, sb, sb.Capacity);
                     what = sb.ToString();
                 }
@@ -58,7 +58,6 @@ namespace Tsunami.Core
             {
                 if (String.IsNullOrEmpty(message))
                 {
-                    StringBuilder sb = new StringBuilder(256);
                     Alert_Message_Get(handle, sb, sb.Capacity);
                     message = sb.ToString();
                 }

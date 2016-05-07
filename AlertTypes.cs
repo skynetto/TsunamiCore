@@ -86,6 +86,7 @@ namespace Tsunami.Core
             : base(alert)
         { }
 
+        private StringBuilder sb = new StringBuilder(256);
         public string Url
         {
             get
@@ -94,7 +95,6 @@ namespace Tsunami.Core
             }
             private set
             {
-                StringBuilder sb = new StringBuilder(256);
                 Alert_TrackerAlert_Url_Get(handle, sb, sb.Capacity);
                 Url = sb.ToString();
             }
@@ -112,7 +112,6 @@ namespace Tsunami.Core
         public torrent_added_alert(IntPtr alert)
         : base(alert)
         { }
-
     }
 
     ///<summary>
