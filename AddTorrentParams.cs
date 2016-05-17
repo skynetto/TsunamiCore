@@ -31,7 +31,7 @@ namespace Tsunami.Core
         public static extern void AddTorrentParams_SavePath_Get(AddTorrentParamsHandle handle, StringBuilder str, int size);
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
-        public static extern TorrentInfoHandle AddTorrentParams_TorrentInfo_Get(AddTorrentParamsHandle handle);
+        public static extern IntPtr AddTorrentParams_TorrentInfo_Get(AddTorrentParamsHandle handle);
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
         public static extern void AddTorrentParams_TorrentInfo_Set(AddTorrentParamsHandle handle, TorrentInfoHandle ti);
@@ -78,13 +78,12 @@ namespace Tsunami.Core
         {
             get
             {
-                ti.SetHandle(AddTorrentParams_TorrentInfo_Get(handle));
+                ti.Handle = new HandleRef(this,AddTorrentParams_TorrentInfo_Get(handle));
                 return ti;
-
             }
             set
             {
-                AddTorrentParams_TorrentInfo_Set(handle, value.GetHandle());
+                AddTorrentParams_TorrentInfo_Set(handle, value.Handle);
             }
         }
 
@@ -175,9 +174,12 @@ namespace Tsunami.Core
         }
 
 
-        public AddTorrentParamsHandle GetHandle()
+        public AddTorrentParamsHandle Handle
         {
-            return handle;
+            get
+            {
+                return handle;
+            }
         }
 
         public void Dispose()

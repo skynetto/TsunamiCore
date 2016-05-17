@@ -23,6 +23,9 @@ namespace Tsunami.Core
         public static extern void Session_Destroy();
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr Session_AddTorrent(AddTorrentParamsHandle handle);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
         public static extern void Session_AsyncAddTorrent(AddTorrentParamsHandle handle);
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
@@ -32,17 +35,25 @@ namespace Tsunami.Core
         public static extern void Session_SetCallback([MarshalAs(UnmanagedType.FunctionPtr)] HandleCallback callbackPointer);
 
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Session_ClearCallback();
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
         public static extern void Alert_What_Get(IntPtr handle, StringBuilder str, int size);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Alert_Destroy(IntPtr handle);
         #endregion PInvoke
 
         private static Dictionary<Type, Action<Object>> Alert2Func = new Dictionary<Type, Action<Object>>();
-        StringBuilder alertNameFromHandle = new StringBuilder(20);
+        static StringBuilder alertNameFromHandle = new StringBuilder(20);
+        private static HandleCallback handler = new HandleCallback(HandleAlertCallback);
 
         public Session()
         {
             Session_Create();
             Alert2Func[typeof(torrent_added_alert)] = a => OnTorrentAddAlert((torrent_added_alert)a);
-            HandleCallback handler = HandleAlertCallback;
+            Alert2Func[typeof(read_piece_alert)] = a => OnReadPieceAlert((read_piece_alert)a);
+            
             Session_SetCallback(handler);
         }
 
@@ -53,19 +64,19 @@ namespace Tsunami.Core
             {
                 atp.ti = ti;
                 atp.SavePath = @"C:\Download";
-                atp.Flags &= ~Core.ATPFlags.flag_auto_managed; // remove auto managed flag
-                atp.Flags &= ~Core.ATPFlags.flag_paused; // remove pause on added torrent
-                atp.Flags &= ~Core.ATPFlags.flag_use_resume_save_path; // 
-                Session_AsyncAddTorrent(atp.GetHandle());
+                //atp.Flags &= ~Core.ATPFlags.flag_auto_managed; // remove auto managed flag
+                //atp.Flags &= ~Core.ATPFlags.flag_paused; // remove pause on added torrent
+                // atp.Flags &= ~Core.ATPFlags.flag_use_resume_save_path; // 
+                Session_AsyncAddTorrent(atp.Handle);
             }
         }
 
-        TorrentHandle FindTorrent(Sha1Hash hash)
+        public TorrentHandle FindTorrent(Sha1Hash hash)
         {
             return new TorrentHandle(Session_FindTorrent(hash.GetHandle()));
         }
 
-        public void HandleAlertCallback(IntPtr alertHandle)
+        private static void HandleAlertCallback(IntPtr alertHandle)
         {
             try
             {
@@ -80,12 +91,20 @@ namespace Tsunami.Core
                     }
                 }
             }
-            catch (TypeLoadException){}
+            catch (TypeLoadException)
+            {
+                Alert_Destroy(alertHandle);
+            }
         }
 
         private static void OnTorrentAddAlert(torrent_added_alert a)
         {
             Console.WriteLine("Progress = {0}", a.What);
+        }
+
+        private static void OnReadPieceAlert(read_piece_alert a)
+        {
+            Console.WriteLine("Progress = {0}", a.buffer);
         }
 
         public void Dispose()
@@ -96,6 +115,7 @@ namespace Tsunami.Core
 
         private void CleanUp()
         {
+            Session_ClearCallback();
             Session_Destroy();
         }
 

@@ -16,6 +16,9 @@ namespace Tsunami.Core
         [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
         public static extern bool TorrentHandle_IsValid(TorrentHandleHandle h);
 
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr TorrentHandle_Status(TorrentHandleHandle h);
+
         #endregion PInvoke
 
         TorrentHandleHandle handle;
@@ -29,6 +32,14 @@ namespace Tsunami.Core
         public TorrentHandle(IntPtr h)
         {
             handle = new HandleRef(this, h);
+        }
+
+        public TorrentStatus Status
+        {
+            get
+            {
+                return new TorrentStatus(TorrentHandle_Status(handle));
+            }
         }
 
         public void Dispose()

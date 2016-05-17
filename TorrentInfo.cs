@@ -24,14 +24,21 @@ namespace Tsunami.Core
             handle = new HandleRef(this, h);
         }
 
-        public void SetHandle(TorrentInfoHandle h)
+        public TorrentInfo(IntPtr h)
         {
-            handle = h;
+            handle = new HandleRef(this, h);
         }
 
-        public TorrentInfoHandle GetHandle()
+        public TorrentInfoHandle Handle
         {
-            return handle;
+            get
+            {
+                return handle;
+            }
+            set
+            {
+                handle = value;
+            }
         }
 
         public void Dispose()

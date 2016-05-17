@@ -64,11 +64,13 @@
     <Compile Include="AlertTypes.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Entry.cs" />
+    <Compile Include="ErrorCode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Session.cs" />
     <Compile Include="Sha1Hash.cs" />
     <Compile Include="TorrentHandle.cs" />
     <Compile Include="TorrentInfo.cs" />
+    <Compile Include="TorrentStatus.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

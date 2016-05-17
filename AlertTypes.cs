@@ -24,18 +24,15 @@ namespace Tsunami.Core
 
         public torrent_alert(IntPtr alert)
             : base(alert)
-        { }
+        {
+            h = new TorrentHandle(Alert_TorrentAlert_TorrentHandle_Get(handle));
+        }
 
+        private TorrentHandle h;
         public TorrentHandle Handle
         {
-            get
-            {
-                return Handle;
-            }
-            private set
-            {
-                Handle = new TorrentHandle(Alert_TorrentAlert_TorrentHandle_Get(handle));
-            }
+            get { return h; }
+            set { h = value; }
         }
     }
 
@@ -53,18 +50,21 @@ namespace Tsunami.Core
 
         public peer_alert(IntPtr alert)
             : base(alert)
-        { }
+        {
+            pid = new Sha1Hash(Alert_PeerAlert_Pid_Get(handle));
+        }
 
         // TODO ip
+        private Sha1Hash pid;
         public Sha1Hash Pid
         {
             get
             {
-                return Pid;
+                return pid;
             }
-            private set
+            set
             {
-                Pid = new Sha1Hash(Alert_PeerAlert_Pid_Get(handle));
+                pid = value;
             }
         }
     }
@@ -84,21 +84,14 @@ namespace Tsunami.Core
 
         public tracker_alert(IntPtr alert)
             : base(alert)
-        { }
-
-        private StringBuilder sb = new StringBuilder(256);
-        public string Url
         {
-            get
-            {
-                return Url;
-            }
-            private set
-            {
-                Alert_TrackerAlert_Url_Get(handle, sb, sb.Capacity);
-                Url = sb.ToString();
-            }
+            sb = new StringBuilder(256);
+            Alert_TrackerAlert_Url_Get(handle, sb, sb.Capacity);
+            url = sb.ToString();
         }
+
+        static private StringBuilder sb;
+        public string url { get; set; }
     }
 
     ///<summary>
@@ -127,4 +120,173 @@ namespace Tsunami.Core
         : base(alert)
         { }
     }
+
+    ///<summary>
+    ///This alert is posted when the asynchronous read operation initiated by a
+    ///call to torrent_handle::read_piece() is completed. If the read failed,
+    ///the torrent is paused and an error state is set and the buffer member of
+    ///the alert is 0. If successful, buffer points to a buffer containing all
+    ///the data of the piece. piece is the piece index that was read. size is
+    ///the number of bytes that was read.
+    ///</summary>
+    public class read_piece_alert : torrent_alert, IDisposable
+    {
+        #region PInvoke
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern uint Alert_ReadPieceAlert_Buffer_Size_Get(AlertHandle handle);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Alert_ReadPieceAlert_Buffer_Get(AlertHandle handle, [Out] byte[] buff, uint size);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern int Alert_ReadPieceAlert_Piece_Get(AlertHandle handle);
+        #endregion PInvoke
+
+        public read_piece_alert(IntPtr alert)
+        : base(alert)
+        {
+            size = Alert_ReadPieceAlert_Buffer_Size_Get(handle);
+            buffer = new byte[size];
+            Alert_ReadPieceAlert_Buffer_Get(handle, buffer, size);
+            piece = Alert_ReadPieceAlert_Piece_Get(handle);
+        }
+
+        public byte[] buffer { get; set; }
+        public int piece { get; set; }
+        public uint size { get; set; }
+    }
+
+    ///<summary>
+    ///This is posted whenever an individual file completes its download. i.e.
+    ///All pieces overlapping this file have passed their hash check.
+    ///</summary>
+    public class file_completed_alert : torrent_alert, IDisposable
+    {
+        #region PInvoke
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern int Alert_FileCompletedAlert_Index_Get(AlertHandle handle);
+        #endregion PInvoke
+
+        public file_completed_alert(IntPtr alert)
+            : base(alert)
+        {
+            index = Alert_FileCompletedAlert_Index_Get(handle);
+        }
+
+        ///<summary>The index of the file that completed.</summary>
+        private int index;
+        public int Index
+        {
+            get { return index; }
+            set { index = value; }
+        }
+    }
+
+    ///<summary>
+    ///This is posted as a response to a torrent_handle::rename_file() call, 
+    ///if the rename operation succeeds.
+    ///</summary>
+    public class file_renamed_alert : torrent_alert, IDisposable
+    {
+        #region PInvoke
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Alert_FileRenamedAlert_Name_Get(AlertHandle handle,StringBuilder sb, int size);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern int Alert_FileRenamedAlert_Index_Get(AlertHandle handle);
+        #endregion PInvoke
+
+        public file_renamed_alert(IntPtr alert)
+            :base(alert)
+        {
+            sb = new StringBuilder(256);
+            Alert_FileRenamedAlert_Name_Get(handle, sb, sb.Capacity);
+            name = sb.ToString();
+            index = Alert_FileRenamedAlert_Index_Get(handle);
+        }
+
+        static private StringBuilder sb;
+
+        ///<summary>The new name of the file.</summary>
+        private string name;
+        public string Name
+        {
+            get { return name; }
+            set { name = value; }
+        }
+        
+        ///<summary>The index of the file that was renamed.</summary>
+        private int index;
+        public int Index
+        {
+            get { return index; }
+            set { index = value; }
+        }
+    }
+
+    ///<summary>
+    ///This is posted as a response to a torrent_handle::rename_file() call,
+    ///if the rename operation failed.
+    ///</summary>
+    public class file_rename_failed_alert : torrent_alert, IDisposable
+    {
+        #region PInvoke
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern int Alert_FileRenameFailedAlert_Index_Get(AlertHandle handle);
+
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr Alert_FileRenameFailedAlert_Error_Get(AlertHandle handle);
+        #endregion PInvoke
+
+
+        public file_rename_failed_alert(IntPtr alert)
+            :base(alert)
+        {
+            index = Alert_FileRenameFailedAlert_Index_Get(handle);
+            error = new ErrorCode(Alert_FileRenameFailedAlert_Error_Get(handle));
+        }
+
+        ///<summary>The index of the file that was supposed to be renamed.</summary>
+        private int index;
+        public int Index
+        {
+            get { return index; }
+            set { index = value; }
+        }
+
+        private ErrorCode error;
+        public ErrorCode Error
+        {
+            get { return error; }
+            set { error = value; }
+        }
+    }
+
+
+    /// <summary>
+    /// This alert is generated when a limit is reached that might have a
+    /// negative impact on upload or download rate performance.
+    /// </summary>
+    public class performance_alert : torrent_alert, IDisposable
+    {
+        #region PInvoke
+        [DllImport("TsunamiBridge", CallingConvention = CallingConvention.StdCall)]
+        public static extern uint Alert_PerformanceAlert_WarningCode_Get(AlertHandle handle);
+        #endregion PInvoke
+
+        public performance_alert(IntPtr alert)
+            :base(alert)
+        {
+            warning_code = (performance_warning_t)Alert_PerformanceAlert_WarningCode_Get(handle);
+        }
+
+        private performance_warning_t warning_code;
+        public performance_warning_t WarningCode
+        {
+            get { return warning_code; }
+            set { warning_code = value; }
+        }
+        
+    }
 }
+
