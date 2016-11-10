@@ -1,7 +1,9 @@
-configuration| Release
+version: '1.0.{build}'
 
-before_build:
--nuget restore
-
-build:
+assembly_info:
+  patch: true
+  file: MyVersion.cs
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}-rc1'
 
